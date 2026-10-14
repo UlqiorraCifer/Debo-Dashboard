@@ -293,13 +293,17 @@ node = node or "All"
 with c_date:
     m1, m2 = st.select_slider("Months", options=MONTHS, value=("Jan", "Dec"), key="months")
 
-with c_size:
-    if hasattr(st, "pills"):
-        size = st.pills("Screen size", list(SIZES), selection_mode="single",
-                        default="S", key="size")
-    else:
-        size = st.selectbox("Screen size", list(SIZES), key="size")
-SC = SIZES.get(size or "S", 1.0)
+from streamlit_js_eval import streamlit_js_eval
+
+win_h = streamlit_js_eval(js_expressions="window.parent.innerHeight", key="win_h")
+
+if win_h:
+    SC = min(max((win_h - 150) / 400, 0.8), 2.2)
+else:
+    SC = 1.0
+
+st.write("window height:", win_h, "scale:", SC)
+
 H_MAIN, H_MINI, H_BOT = int(295 * SC), int(145 * SC), int(205 * SC)
 
 lo, hi = MONTHS.index(m1) + 1, MONTHS.index(m2) + 1
