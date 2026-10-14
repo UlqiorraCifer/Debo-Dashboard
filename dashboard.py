@@ -51,6 +51,40 @@ st.markdown(
       /* chart heights follow the window height -> always one screen */
       .app-title {font-size: 1.05rem; font-weight: 700; line-height: 1.15; margin: 0;}
       .app-sub {font-size: 0.7rem; opacity: .65; margin: 0;}
+      /* page background */
+.stApp {background: radial-gradient(circle at 15% 0%, #16264a 0%, #0b1020 60%);}
+
+/* every chart becomes a card */
+[class*="st-key-soc"], [class*="st-key-mini_"], [class*="st-key-bot_"] {
+    background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.10);
+    border-top: 3px solid var(--accent, #64748b);
+    border-radius: 12px;
+    padding: 4px 8px 0 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+[class*="st-key-soc"]:hover, [class*="st-key-mini_"]:hover, [class*="st-key-bot_"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.5);
+}
+
+/* one accent color per metric */
+.st-key-soc    {--accent: #16a34a;}
+.st-key-mini_1 {--accent: #ef4444;}
+.st-key-mini_2 {--accent: #f59e0b;}
+.st-key-mini_3 {--accent: #22c55e;}
+.st-key-mini_4 {--accent: #3b82f6;}
+.st-key-bot_1  {--accent: #a855f7;}
+.st-key-bot_2  {--accent: #f59e0b;}
+.st-key-bot_3  {--accent: #06b6d4;}
+
+/* livelier title */
+.app-title {
+    font-size: 1.25rem !important;
+    background: linear-gradient(90deg, #4ade80, #38bdf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
     </style>
     """,
     unsafe_allow_html=True,
@@ -130,6 +164,8 @@ def metric_bar(m, col, title, kind):
         text=[fmt(v, kind) for v in vals],
         textposition="outside", cliponaxis=False,
         marker_color=[COLORS[s] for s in m.index],
+        marker_line=dict(color=["#ffffff" if s == "DEBO" else "rgba(0,0,0,0)" for s in m.index],
+                         width=2),
         hovertemplate="%{x}: %{text}<extra></extra>",
     ))
     fig.update_yaxes(visible=False, range=[0, top * 1.3])
@@ -141,38 +177,42 @@ def soc_figure(f, order):
     daily = (f.groupby(["date", "strategy"], observed=True)["soc"]
              .mean().unstack("strategy") * 100)
     fig = go.Figure()
-    # shade growth stages that fall inside the selected dates
-    stage = f.drop_duplicates("date").set_index("date")["growth_stage"].sort_index()
-    for name, color, op in (("reproductive", "#f59e0b", 0.20),
-                            ("ripening", "#94a3b8", 0.12)):
-        flag = (stage == name)
-        start = None
-        prev = None
-        first = True
-        spans = []
-        for d, on in flag.items():
-            if on and start is None:
-                start = d
-            if not on and start is not None:
-                spans.append((start, prev))
-                start = None
-            prev = d
-        if start is not None:
-            spans.append((start, prev))
-        for x0, x1 in spans:
-            fig.add_vrect(x0=x0, x1=x1, fillcolor=color, opacity=op, line_width=0)
-            if first:
-                fig.add_annotation(x=x0, xref="x", y=1, yref="paper", yanchor="bottom",
-                                   xanchor="left", text=name.capitalize(), showarrow=False,
-                                   font=dict(size=9, color="#64748b"))
-            first = False
+
+    # ---- growth-stage ribbon + faint tint (all three stages, every segment labeled)
+    stage_style = {"vegetative": ("#22c55e", "Vegetative"),
+                   "reproductive": ("#f59e0b", "Reproductive"),
+                   "ripening": ("#94a3b8", "Ripening")}
+
+    stage = (f.drop_duplicates("date").set_index("date")["growth_stage"]
+             .sort_index().astype(str))
+    run_id = (stage != stage.shift()).cumsum()
+    for _, run in stage.groupby(run_id):
+        name = run.iloc[0]
+        if name not in stage_style:
+            continue
+        color, label = stage_style[name]
+        x0 = run.index[0]
+        x1 = run.index[-1] + pd.Timedelta(days=1)
+        # faint tint behind the lines
+        fig.add_vrect(x0=x0, x1=x1, fillcolor=color, opacity=0.07, line_width=0)
+        # ribbon at the top of the plot
+        fig.add_shape(type="rect", xref="x", yref="paper", x0=x0, x1=x1,
+                      y0=0.92, y1=1.0, fillcolor=color, opacity=0.9, line_width=0)
+        if (x1 - x0).days >= 20:          # skip the label if the segment is too narrow
+            fig.add_annotation(x=x0 + (x1 - x0) / 2, xref="x", y=0.96, yref="paper",
+                               text=label, showarrow=False,
+                               font=dict(size=9, color="white"))
+
+    # ---- SoC lines
     for s in order:
         if s in daily.columns:
             fig.add_trace(go.Scatter(
                 x=daily.index, y=daily[s].round(1), name=SHORT[s], mode="lines",
                 line=dict(color=COLORS[s], width=3 if s == "DEBO" else 1.8),
                 hovertemplate=SHORT[s] + ": %{y:.1f}%<extra></extra>"))
-    fig.update_yaxes(range=[0, 105], ticksuffix="%", gridcolor="rgba(128,128,128,.2)")
+
+    fig.update_yaxes(range=[0, 118], tickvals=[0, 25, 50, 75, 100], ticksuffix="%",
+                     gridcolor="rgba(128,128,128,.2)")
     fig.update_xaxes(showgrid=False, tickformat="%b")
     fig.update_layout(hovermode="x unified")
     return base_layout(fig, H_MAIN,
