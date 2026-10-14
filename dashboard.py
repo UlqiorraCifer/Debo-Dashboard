@@ -302,7 +302,7 @@ if win_h:
 else:
     SC = 1.0
 
-st.write("window height:", win_h, "scale:", SC)
+
 
 H_MAIN, H_MINI, H_BOT = int(295 * SC), int(145 * SC), int(205 * SC)
 
