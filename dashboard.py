@@ -238,7 +238,7 @@ def improvement_figure(m, order):
             textposition="outside", cliponaxis=False, marker_color=COLORS[b],
             textfont=dict(size=9),
             hovertemplate=SHORT[b] + ": %{text}<extra></extra>"))
-       fig.update_xaxes(visible=False)
+    fig.update_xaxes(visible=False)
     fig.update_yaxes(autorange="reversed", tickfont=dict(size=10))
     fig.update_layout(barmode="group", bargap=0.2, bargroupgap=0.05)
     return base_layout(fig, H_BOT, "📈 DEBO improvement (%)",
