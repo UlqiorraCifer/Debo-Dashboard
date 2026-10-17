@@ -178,7 +178,7 @@ def soc_figure(f, order):
              .mean().unstack("strategy") * 100)
     fig = go.Figure()
 
-    # ---- growth-stage ribbon + faint tint (all three stages, every segment labeled)
+    # growth-stage ribbon + faint tint (all three stages, every segment labeled)
     stage_style = {"vegetative": ("#22c55e", "Vegetative"),
                    "reproductive": ("#f59e0b", "Reproductive"),
                    "ripening": ("#94a3b8", "Ripening")}
@@ -193,17 +193,15 @@ def soc_figure(f, order):
         color, label = stage_style[name]
         x0 = run.index[0]
         x1 = run.index[-1] + pd.Timedelta(days=1)
-        # faint tint behind the lines
         fig.add_vrect(x0=x0, x1=x1, fillcolor=color, opacity=0.07, line_width=0)
-        # ribbon at the top of the plot
         fig.add_shape(type="rect", xref="x", yref="paper", x0=x0, x1=x1,
                       y0=0.92, y1=1.0, fillcolor=color, opacity=0.9, line_width=0)
-        if (x1 - x0).days >= 20:          # skip the label if the segment is too narrow
+        if (x1 - x0).days >= 20:
             fig.add_annotation(x=x0 + (x1 - x0) / 2, xref="x", y=0.96, yref="paper",
                                text=label, showarrow=False,
                                font=dict(size=9, color="white"))
 
-    # ---- SoC lines
+    # SoC lines
     for s in order:
         if s in daily.columns:
             fig.add_trace(go.Scatter(
@@ -216,7 +214,7 @@ def soc_figure(f, order):
     fig.update_xaxes(showgrid=False, tickformat="%b")
     fig.update_layout(hovermode="x unified")
     return base_layout(fig, H_MAIN,
-                       "Battery state of charge (daily mean)",
+                       "🔋 Battery state of charge (daily mean)",
                        legend=True, margin=dict(l=8, r=8, t=30, b=6))
 
 
@@ -230,7 +228,7 @@ def improvement_figure(m, order):
                            showarrow=False, font=dict(size=11), opacity=.7)
         fig.update_xaxes(visible=False)
         fig.update_yaxes(visible=False)
-        return base_layout(fig, H_BOT, "DEBO improvement (%)")
+        return base_layout(fig, H_BOT, "📈 DEBO improvement (%)")
     for b in baselines:
         vals = [improvement(m, b, c, lb) for c, _, lb in metrics]
         fig.add_trace(go.Bar(
@@ -240,10 +238,10 @@ def improvement_figure(m, order):
             textposition="outside", cliponaxis=False, marker_color=COLORS[b],
             textfont=dict(size=9),
             hovertemplate=SHORT[b] + ": %{text}<extra></extra>"))
-    fig.update_xaxes(visible=False)
+       fig.update_xaxes(visible=False)
     fig.update_yaxes(autorange="reversed", tickfont=dict(size=10))
     fig.update_layout(barmode="group", bargap=0.2, bargroupgap=0.05)
-    return base_layout(fig, H_BOT, "DEBO improvement (%)",
+    return base_layout(fig, H_BOT, "📈 DEBO improvement (%)",
                        legend=True, margin=dict(l=6, r=44, t=26, b=4))
 
 
@@ -263,7 +261,7 @@ def stage_figure(f, order):
     fig.update_yaxes(visible=False)
     fig.update_xaxes(tickfont=dict(size=9))
     fig.update_layout(barmode="group", bargap=0.18)
-    return base_layout(fig, H_BOT, "Weighted penalty by growth stage (lower is better)",
+    return base_layout(fig, H_BOT, "🌱 Weighted penalty by growth stage (lower is better)",
                        margin=dict(l=6, r=6, t=26, b=4))
 
 
@@ -283,7 +281,7 @@ def hour_figure(f, order):
                      ticktext=[f"{h:02d}h" for h in range(0, 24, 4)],
                      tickvals=list(range(0, 24, 4)))
     fig.update_layout(hovermode="x unified")
-    return base_layout(fig, H_BOT, "Share of hours transmitting, by time of day (2-hour bins)",
+    return base_layout(fig, H_BOT, "🕐 Share of hours transmitting, by time of day (2-hour bins)",
                        margin=dict(l=6, r=6, t=26, b=6))
 
 
